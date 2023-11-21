@@ -4,6 +4,7 @@ namespace Somecode\Framework\Routing;
 
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
+use League\Container\Container;
 use Somecode\Framework\Http\Exceptions\MethodNotAllowedException;
 use Somecode\Framework\Http\Exceptions\RouteNotFoundException;
 use Somecode\Framework\Http\Request;
@@ -16,29 +17,36 @@ class Router implements RouterInterface
      * @throws MethodNotAllowedException
      * @throws RouteNotFoundException
      */
-    public function dispatch(Request $request): array
+    private array $routes;
+
+    public function dispatch(Request $request, Container $container): array
     {
 
         [$handler, $vars] = $this->extractRouteInfo($request);
 
         if (is_array($handler)) {
-            [$controller, $method] = $handler;
-            $handler = [new $controller, $method];
+            [$controllerId, $method] = $handler;
+            $controller = $container->get($controllerId);
+            $handler = [$controller, $method];
         }
 
         return [$handler, $vars];
     }
 
+    public function registerRoutes(array $routes): void
+    {
+        $this->routes = $routes;
+    }
+
     private function extractRouteInfo(Request $request): array
     {
         $dispatcher = simpleDispatcher(function (RouteCollector $collector) {
-            $routes = include BASE_PATH.'/routes/web.php';
-
-            foreach ($routes as $route) {
+            foreach ($this->routes as $route) {
                 $collector->addRoute(...$route);
             }
 
         });
+
         $routeInfo = $dispatcher->dispatch(
             $request->getMethod(),
             $request->getPath(),

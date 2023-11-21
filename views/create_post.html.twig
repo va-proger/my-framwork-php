@@ -1,0 +1,19 @@
+{% extends 'default.html.twig' %}
+
+
+{% block main %}
+    <div class="bg-body-tertiary p-5 rounded">
+        <form action="">
+            <div class="mb-3">
+                <label for="title" class="form-label">Заголовок</label>
+                <input type="text" class="form-control" id="title" aria-describedby="titleHelp">
+                <div class="form-text" id="titleHelp">Дайте своему посту заголовок</div>
+            </div>
+            <div class="mb-3">
+                <label for="body" class="form-label">Контент</label>
+                <textarea name="body" id="" cols="30" rows="10" class="form-control"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Добавить</button>
+        </form>
+    </div>
+{% endblock %}
