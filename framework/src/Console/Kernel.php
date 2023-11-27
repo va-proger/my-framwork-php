@@ -15,6 +15,7 @@ class Kernel
     public function handle(): int
     {
         $this->registerCommands();
+        // Запуск команды
         $status = $this->aplication->run();
         dd($status);
 

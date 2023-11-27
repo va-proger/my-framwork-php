@@ -51,6 +51,8 @@ $container->addShared(Connection::class, function () use ($container): Connectio
     return $container->get(ConnectionFactory::class)->create();
 });
 
+$container->add(Application::class)->addArgument($container);
+
 $container->add(ConsoleKernel::class)->addArgument($container)->addArgument(Application::class);
 
 return $container;
