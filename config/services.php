@@ -6,6 +6,7 @@ use League\Container\Argument\Literal\StringArgument;
 use League\Container\Container;
 use League\Container\ReflectionContainer;
 use Somecode\Framework\Console\Application;
+use Somecode\Framework\Console\Commands\MigrateCommand;
 use Somecode\Framework\Console\Kernel as ConsoleKernel;
 use Somecode\Framework\Controller\AbstractController;
 use Somecode\Framework\Dbal\ConnectionFactory;
@@ -54,5 +55,8 @@ $container->addShared(Connection::class, function () use ($container): Connectio
 $container->add(Application::class)->addArgument($container);
 
 $container->add(ConsoleKernel::class)->addArgument($container)->addArgument(Application::class);
+
+$container->add('console:migrate', MigrateCommand::class)
+    ->addArgument(Connection::class)->addArgument(new StringArgument(BASE_PATH.'/database/migrations'));
 
 return $container;
