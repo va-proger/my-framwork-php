@@ -24,22 +24,31 @@ class MigrateCommand implements CommandInterface
         try {
             //  создаем таблицу миграции если не существует
             $this->createMigrationsTable();
-            $this->connection->beginTransaction();
 
+            $this->connection->beginTransaction();
+            // получаем которые уже есть в таблице миграций
             $appliedMigrations = $this->getAppliedMigrations();
 
+            // получаем миграции для применения
             $migrationsFiles = $this->getMigrationFiles();
-
+            // получить миграции для применения
             $migrationsToApply = array_values(array_diff($migrationsFiles, $appliedMigrations));
 
-            $scheme = new Schema();
+            $schema = new Schema();
 
-            foreach ($migrationsToApply as $migrate) {
-                $migrationInstance = require $this->migrationsPath."/$migrate";
-                $migrationInstance->up($scheme);
+            foreach ($migrationsToApply as $migration) {
+                $migrationInstance = require $this->migrationsPath."/$migration";
+                $migrationInstance->up($schema);
+                $this->addMigration($migration);
             }
-            dd($scheme);
-            $this->connection->connect();
+            // Выполняем SQL запрос
+            $sqlArray = $schema->toSql($this->connection->getDatabasePlatform());
+
+            foreach ($sqlArray as $sql) {
+                $this->connection->executeQuery($sql);
+            }
+
+            $this->connection->commit();
 
         } catch (\Throwable $e) {
             $this->connection->rollBack();
@@ -51,18 +60,25 @@ class MigrateCommand implements CommandInterface
 
     private function createMigrationsTable(): void
     {
+
         $schemaManager = $this->connection->createSchemaManager();
         if (! $schemaManager->tablesExist(self::MIGRATIONS_TABLE)) {
+
             $schema = new Schema();
+
             $table = $schema->createTable(self::MIGRATIONS_TABLE);
+            // добавляем id миграции
             $table->addColumn('id', Types::INTEGER, [
                 'unsigned' => true,
                 'autoincrement' => true,
             ]);
+
             $table->addColumn('migration', Types::STRING);
+            // добавляем время создание миграции
             $table->addColumn('create_at', Types::DATETIME_IMMUTABLE, [
                 'default' => 'CURRENT_TIMESTAMP',
             ]);
+
             $table->setPrimaryKey(['id']);
 
             $sqlArray = $schema->toSql($this->connection->getDatabasePlatform());
@@ -95,5 +111,14 @@ class MigrateCommand implements CommandInterface
         });
 
         return array_values($filteredFiles);
+    }
+
+    private function addMigration(string $migration): void
+    {
+        $queryBuilder = $this->connection->createQueryBuilder();
+        $queryBuilder->insert(self::MIGRATIONS_TABLE)
+            ->values(['migration' => ':migration'])
+            ->setParameter('migration', $migration)
+            ->executeQuery();
     }
 }

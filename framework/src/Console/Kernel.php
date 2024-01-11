@@ -17,7 +17,6 @@ class Kernel
         $this->registerCommands();
         // Запуск команды
         $status = $this->aplication->run();
-        dd($status);
 
         return 0;
     }
